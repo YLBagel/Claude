@@ -1,0 +1,306 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>大连 4 天 3 晚 · 海岸线 & 海鲜之旅</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#ffffff; --ink:#1d1d1f; --sub:#6e6e73;
+    --line:#e5e5ea; --blur:rgba(255,255,255,.72);
+    --d1:#007aff; --d2:#34c759; --d3:#ff9500; --d4:#af52de; --hotel:#ff3b30;
+    --radius:18px; --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#000;--card:#1c1c1e;--ink:#f5f5f7;--sub:#98989d;--line:#2c2c2e;--blur:rgba(28,28,30,.72);}
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.5;
+    padding-bottom:env(safe-area-inset-bottom);}
+  .wrap{max-width:720px;margin:0 auto;padding:0 16px}
+
+  header{padding:34px 16px 18px;text-align:center;max-width:720px;margin:0 auto}
+  header .kicker{color:var(--d1);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+  header h1{font-size:30px;line-height:1.15;margin:8px 0 6px;letter-spacing:-.02em}
+  header .dates{color:var(--sub);font-size:15px}
+  header .lede{color:var(--sub);font-size:14px;margin-top:12px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+  .chip{font-size:12.5px;padding:6px 12px;border-radius:999px;background:var(--card);
+    border:1px solid var(--line);box-shadow:var(--shadow);color:var(--sub)}
+  .chip b{color:var(--ink);font-weight:600}
+
+  #map{height:56vh;min-height:340px;border-radius:var(--radius);margin:18px 0;
+    box-shadow:var(--shadow);border:1px solid var(--line);z-index:0}
+  .leaflet-container{font-family:var(--font)}
+  .pin{display:flex;align-items:center;justify-content:center;border-radius:50%;
+    color:#fff;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.35);border:2.5px solid #fff}
+
+  .tabs{position:sticky;top:0;z-index:500;display:flex;gap:8px;overflow-x:auto;
+    padding:10px 16px;margin:0 -16px;background:var(--blur);
+    backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--line)}
+  .tab{flex:0 0 auto;font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:999px;
+    border:1px solid var(--line);background:var(--card);color:var(--sub);cursor:pointer}
+  .tab.active{color:#fff;border-color:transparent}
+  .tab[data-d="all"].active{background:#8e8e93}
+  .tab[data-d="1"].active{background:var(--d1)} .tab[data-d="2"].active{background:var(--d2)}
+  .tab[data-d="3"].active{background:var(--d3)} .tab[data-d="4"].active{background:var(--d4)}
+
+  .day{margin:26px 0 6px}
+  .day-head{display:flex;align-items:baseline;gap:10px;margin:0 0 14px}
+  .day-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;align-self:center}
+  .day-head h2{font-size:20px;margin:0;letter-spacing:-.01em}
+  .day-head .sub{color:var(--sub);font-size:13px;margin-left:auto;text-align:right}
+
+  .stop{position:relative;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin:0 0 12px}
+  .stop .row1{display:flex;align-items:center;gap:10px}
+  .stop .tm{font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:var(--sub);
+    min-width:44px}
+  .stop .emo{font-size:18px}
+  .stop .nm{font-weight:600;font-size:16px;flex:1}
+  .stop .tag{font-size:11px;color:var(--sub);border:1px solid var(--line);
+    padding:2px 7px;border-radius:6px;white-space:nowrap}
+  .stop .desc{color:var(--sub);font-size:13.5px;margin:8px 0 0;padding-left:54px}
+  .stop .meta{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 0;padding-left:54px}
+  .m{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);
+    text-decoration:none;color:var(--ink);display:inline-flex;gap:4px;align-items:center;background:transparent}
+  .m.nav{border-color:var(--d1);color:var(--d1)}
+  .m.dp{border-color:#ff2d55;color:#ff2d55}
+  .m.xhs{border-color:#ff2442;color:#ff2442}
+  .m.budget{color:var(--sub)}
+  .m.pay1{color:var(--d2);border-color:var(--d2)}
+  .m.pay05{color:var(--d3);border-color:var(--d3)}
+  @media (prefers-color-scheme:dark){.m{color:var(--ink)}}
+
+  .note{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:18px;margin:22px 0}
+  .note h3{margin:0 0 10px;font-size:16px}
+  .note ul{margin:0;padding-left:18px} .note li{margin:6px 0;font-size:13.5px;color:var(--sub)}
+  .note li b{color:var(--ink)}
+  .warn{border-left:3px solid var(--d3)}
+  footer{color:var(--sub);font-size:12px;text-align:center;padding:26px 16px 40px}
+  a{color:var(--d1)}
+</style>
+
+<header>
+  <div class="kicker">Trip Map · 行程地图</div>
+  <h1>大连 · 海岸线 &amp; 海鲜 4 天 3 晚</h1>
+  <div class="dates">2026 · 7.9（周四）— 7.12（周日）</div>
+  <p class="lede">中央酒店落脚，节奏舒缓不赶场。主线只有两条：<b style="color:var(--ink)">看海</b> 与 <b style="color:var(--ink)">吃海鲜（本地／日料皆可）</b>。第一天最轻，最后一天离机场近。</p>
+  <div class="chips">
+    <span class="chip">🏨 <b>亚朵·中山广场</b></span>
+    <span class="chip">✈️ 到达 <b>7.9 11:20</b></span>
+    <span class="chip">✈️ 返程 <b>7.12 18:35</b></span>
+    <span class="chip">🌊 海景优先</span>
+    <span class="chip">🦐 海鲜 / 日料</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="map"></div>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-d="all">全部</button>
+    <button class="tab" data-d="1">Day 1 · 抵达 + 东港</button>
+    <button class="tab" data-d="2">Day 2 · 滨海路东段</button>
+    <button class="tab" data-d="3">Day 3 · 星海湾</button>
+    <button class="tab" data-d="4">Day 4 · 告别 + 机场</button>
+  </div>
+  <div id="days"></div>
+
+  <div class="note warn">
+    <h3>⚠️ 关于餐厅名单，请先看这条</h3>
+    <ul>
+      <li>下面的餐厅是<b>参考推荐</b>，基于对大连的常识给出；本次<b>未接入大众点评／小红书实时数据</b>（技能的实时调研需要本地浏览器桥接，此环境不具备）。</li>
+      <li>出发前请用每个餐厅卡片上的 <b>大众点评</b> / <b>小红书</b> 按钮核对：营业时间、确切地址、是否仍营业、是否需预订、最新口碑。</li>
+      <li>吃海鲜排档务必<b>现场看秤、先确认单价</b>，或直接选正规海鲜酒楼，避免旺季宰客。</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <h3>🧭 总览 · 结论先行</h3>
+    <ul>
+      <li><b>动线</b>：Day1 就近（东港，离酒店最近）→ Day2 东南海岸（滨海路老虎滩段）→ Day3 西南海湾（星海）→ Day4 市区轻松 + 告别海鲜后奔机场。四天不折返、不赶。</li>
+      <li><b>每天一个片区、最多一个需预约的点</b>，其余留白，随天气／体力／饭点临时调整——这是参考行程，不是必须执行的脚本。</li>
+      <li><b>已为你砍掉</b>：旅顺（远且偏战争历史／博物馆）、多数博物馆（按你的偏好）。<b>金石滩</b>（十里黄金海岸、地质奇石）单程约 1 小时，风景一流但要占一整天——如果想要一次大远足，可用它替换 Day3，见下方。</li>
+      <li><b>大连美术馆</b>已按你说的“可以安排”放在 Day3 上午作为室内备选；<b>地址与开放时间请务必核实</b>（坐标为近似）。</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <h3>💡 实用提示</h3>
+    <ul>
+      <li><b>天气（7 月）</b>：温暖湿润，海边风大、偶有阵雨；带<b>防晒</b>+一件<b>薄外套</b>。音乐喷泉、海滩、滨海路徒步都看天。</li>
+      <li><b>支付</b>：微信 / 支付宝几乎通用（卡片上绿色 ✓ = 基本没问题）；海鲜大排档带点现金更稳。</li>
+      <li><b>交通</b>：酒店在中山广场，打车到东港 ~10 分钟、滨海路各点 20–40 分钟；滨海路景点之间打车/网约车最省心。</li>
+      <li><b>音乐喷泉（东港）</b>：旺季多为傍晚场、周末更全，<b>场次请当天现场／官方确认</b>。</li>
+      <li><b>坐标为近似值</b>，用于地图参考与导航起点；以导航 App 实际搜索结果为准。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>由 trip-map-builder 技能生成 · 参考行程，实际以现场与导航为准</footer>
+
+<script>
+const HOTEL = { name:"大连中山广场亚朵酒店", lat:38.9188, lng:121.6395,
+  area:"中山广场 · 中山区", desc:"中央位置，步行可达中山广场、港湾广场；打车到各海滨景点 20–40 分钟。" };
+
+const DAYS = [
+  { d:1, title:"抵达 + 东港海滨", date:"7.9 周四 · 最轻松的一天", color:"var(--d1)", stops:[
+    {t:"11:20", type:"transport", nm:"周水子国际机场 抵达", lat:38.9657, lng:121.5386,
+      desc:"出站打车约 25–30 分钟到酒店（约 12 km）。"},
+    {t:"12:00", type:"hotel", nm:"亚朵·中山广场 寄存行李", lat:38.9188, lng:121.6395,
+      desc:"未到入住时间就先寄存，轻装出门。", pay:1},
+    {t:"12:30", type:"food", nm:"品海楼 / 天天渔港（中山广场附近）", lat:38.9175, lng:121.6360,
+      desc:"落地第一顿本地海鲜，就近解决。老字号海鲜酒楼，稳妥不踩坑。", budget:"¥120/人", pay:1},
+    {t:"14:00", type:"spot", nm:"中山广场 历史建筑群", lat:38.9186, lng:121.6389,
+      desc:"环广场一圈欧式老建筑，慢慢逛，热身用。"},
+    {t:"15:30", type:"spot", nm:"东港 · 威尼斯水城 + 海滨栈道", lat:38.9285, lng:121.6595,
+      desc:"运河、贡多拉、海边栈道，离酒店最近的海景，适合傍晚。"},
+    {t:"18:00", type:"food", nm:"东港海鲜晚餐", lat:38.9265, lng:121.6560,
+      desc:"海边就餐，看夕阳。点招牌活海鲜 + 一份大连焖子。", budget:"¥150/人", pay:1},
+    {t:"19:30", type:"spot", nm:"东港音乐喷泉", lat:38.9250, lng:121.6555,
+      desc:"傍晚喷泉灯光秀。⚠️ 场次当天现场确认。"}
+  ]},
+  { d:2, title:"滨海路东段（核心海景日）", date:"7.10 周五 · 东南海岸线", color:"var(--d2)", stops:[
+    {t:"09:30", type:"spot", nm:"老虎滩 · 渔人码头", lat:38.8722, lng:121.6600,
+      desc:"彩色欧式建筑 + 渔港海景，出片。可先在这一带慢逛。"},
+    {t:"11:00", type:"spot", nm:"老虎滩海洋公园（可选）", lat:38.8718, lng:121.6560,
+      desc:"想看海洋馆再进，不感兴趣就跳过，多留时间给海边。"},
+    {t:"12:00", type:"food", nm:"渔人码头 海鲜午餐", lat:38.8725, lng:121.6595,
+      desc:"海边海鲜，看秤点单。", budget:"¥140/人", pay:1},
+    {t:"13:30", type:"spot", nm:"滨海路 · 北大桥 观景", lat:38.8680, lng:121.6725,
+      desc:"跨海红桥经典机位，山海之间。"},
+    {t:"14:15", type:"spot", nm:"燕窝岭 婚庆公园", lat:38.8662, lng:121.6650,
+      desc:"悬崖海景 + 白色礼堂，滨海路上最上镜的一段。"},
+    {t:"15:30", type:"spot", nm:"棒棰岛 景区", lat:38.8760, lng:121.6870,
+      desc:"国宾馆片区的私享海湾，沙滩干净、海水清，适合发呆吹风。"},
+    {t:"18:30", type:"food", nm:"市区日本料理（换口味）", lat:38.9160, lng:121.6320,
+      desc:"大连日料底子厚。刺身/寿司/海胆，换换口味。建议提前订位。",
+      budget:"¥180/人", pay:1}
+  ]},
+  { d:3, title:"星海湾", date:"7.11 周六 · 西南海湾", color:"var(--d3)", stops:[
+    {t:"09:30", type:"spot", nm:"付家庄公园 海滨", lat:38.8620, lng:121.6255,
+      desc:"市区人气海滨浴场，天热可下水；不下水就沿海慢走。"},
+    {t:"11:00", type:"spot", nm:"大连美术馆（可选·室内）", lat:38.8800, lng:121.5950,
+      desc:"你说“可以安排”的那一站，中午避暑室内小逛。⚠️ 地址/开放时间请核实（坐标近似）。"},
+    {t:"12:30", type:"food", nm:"星海广场附近 海鲜午餐", lat:38.8800, lng:121.5920,
+      desc:"星海一带海鲜酒楼，饭后正好逛广场。", budget:"¥140/人", pay:1},
+    {t:"14:00", type:"spot", nm:"星海广场", lat:38.8770, lng:121.5880,
+      desc:"号称亚洲最大城市广场，直通海湾，空旷开阔。"},
+    {t:"15:00", type:"spot", nm:"星海湾大桥 观景", lat:38.8680, lng:121.5760,
+      desc:"跨海大桥，海湾全景机位。"},
+    {t:"16:00", type:"spot", nm:"星海公园 海滨", lat:38.8830, lng:121.5990,
+      desc:"老牌海滨公园，收个尾、看落日。"},
+    {t:"18:30", type:"food", nm:"晚餐：海鲜 或 日料（星海/市区）", lat:38.8790, lng:121.5920,
+      desc:"按当天胃口二选一，都在返程顺路上。", budget:"¥160/人", pay:1}
+  ]},
+  { d:4, title:"告别 + 机场", date:"7.12 周日 · 18:35 返程", color:"var(--d4)", stops:[
+    {t:"09:30", type:"spot", nm:"俄罗斯风情街", lat:38.9195, lng:121.6265,
+      desc:"近大连火车站、离酒店近，市区轻松逛一圈，买点手信。"},
+    {t:"11:30", type:"food", nm:"告别午餐：天天渔港 / 群英楼", lat:38.9170, lng:121.6330,
+      desc:"临走再来一顿经典大连海鲜，收尾。", budget:"¥150/人", pay:1},
+    {t:"13:30", type:"hotel", nm:"回酒店取行李", lat:38.9188, lng:121.6395,
+      desc:"退房 / 取寄存行李。"},
+    {t:"15:00", type:"transport", nm:"打车前往 周水子机场", lat:38.9657, lng:121.5386,
+      desc:"18:35 航班，建议 15:00–15:30 出发，留足安检富余。"},
+    {t:"18:35", type:"transport", nm:"周水子机场 起飞", lat:38.9657, lng:121.5386,
+      desc:"返程。"}
+  ]}
+];
+
+const EMO = {food:"🦐", spot:"🌊", drink:"☕", hotel:"🏨", transport:"✈️"};
+const TAG = {food:"美食", spot:"景点", drink:"饮品", hotel:"住宿", transport:"交通"};
+const DCOL = {1:"#007aff",2:"#34c759",3:"#ff9500",4:"#af52de"};
+
+/* ---------- map ---------- */
+const map = L.map('map',{scrollWheelZoom:false}).setView([38.895,121.63],12);
+const gaode = L.tileLayer('https://wprd0{s}.is.autonavi.com/appmaptile?x={x}&y={y}&z={z}&lang=zh_cn&size=1&scl=1&style=7',
+  {subdomains:['1','2','3','4'],maxZoom:18,attribution:'高德地图'});
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {maxZoom:19,attribution:'© OpenStreetMap'});
+gaode.addTo(map);
+L.control.layers({"高德":gaode,"OSM":osm}).addTo(map);
+
+function pin(color,emo,ring){
+  return L.divIcon({className:'',html:
+    `<div class="pin" style="width:30px;height:30px;background:${color};border-color:${ring||'#fff'}">${emo}</div>`,
+    iconSize:[30,30],iconAnchor:[15,15]});
+}
+// hotel marker
+const hm = L.marker([HOTEL.lat,HOTEL.lng],{icon:pin(getCSS('--hotel'),'🏨'),zIndexOffset:1000})
+  .bindPopup(`<b>${HOTEL.name}</b><br>${HOTEL.area}<br>${HOTEL.desc}`).addTo(map);
+
+const dayLayers = {1:L.layerGroup(),2:L.layerGroup(),3:L.layerGroup(),4:L.layerGroup()};
+DAYS.forEach(day=>{
+  day.stops.forEach((s,i)=>{
+    const m = L.marker([s.lat,s.lng],{icon:pin(DCOL[day.d],EMO[s.type])})
+      .bindPopup(`<b>Day${day.d} · ${s.t}</b> ${s.nm}<br><span style="color:#888">${s.desc||''}</span>`);
+    dayLayers[day.d].addLayer(m);
+  });
+  dayLayers[day.d].addTo(map);
+});
+function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+/* ---------- day cards ---------- */
+const enc = encodeURIComponent;
+function links(s){
+  const nav = `https://uri.amap.com/marker?position=${s.lng},${s.lat}&name=${enc(s.nm)}&src=trip`;
+  let html = `<a class="m nav" target="_blank" rel="noopener" href="${nav}">🧭 导航</a>`;
+  if(s.type==='food'){
+    html += `<a class="m dp" target="_blank" rel="noopener" href="https://www.dianping.com/search/keyword/18/0_${enc(s.nm)}">🍽️ 大众点评</a>`;
+    html += `<a class="m xhs" target="_blank" rel="noopener" href="https://www.xiaohongshu.com/search_result?keyword=${enc('大连 '+s.nm)}">📕 小红书</a>`;
+  }
+  if(s.budget) html += `<span class="m budget">💰 ${s.budget}</span>`;
+  if(s.pay===1) html += `<span class="m pay1">✓ 微信/支付宝</span>`;
+  else if(s.pay===0.5) html += `<span class="m pay05">~ 支付待确认</span>`;
+  return html;
+}
+const box = document.getElementById('days');
+DAYS.forEach(day=>{
+  const el = document.createElement('section');
+  el.className='day'; el.dataset.d=day.d;
+  el.innerHTML = `<div class="day-head">
+      <span class="day-dot" style="background:${DCOL[day.d]}"></span>
+      <h2>Day ${day.d} · ${day.title}</h2>
+      <span class="sub">${day.date}</span>
+    </div>` +
+    day.stops.map(s=>`
+      <div class="stop">
+        <div class="row1">
+          <span class="tm">${s.t}</span>
+          <span class="emo">${EMO[s.type]}</span>
+          <span class="nm">${s.nm}</span>
+          <span class="tag">${TAG[s.type]}</span>
+        </div>
+        ${s.desc?`<p class="desc">${s.desc}</p>`:''}
+        <div class="meta">${links(s)}</div>
+      </div>`).join('');
+  box.appendChild(el);
+});
+
+/* ---------- day filter ---------- */
+const tabs = document.getElementById('tabs');
+tabs.addEventListener('click',e=>{
+  const b = e.target.closest('.tab'); if(!b) return;
+  [...tabs.children].forEach(t=>t.classList.remove('active'));
+  b.classList.add('active');
+  const d = b.dataset.d;
+  // map layers
+  Object.keys(dayLayers).forEach(k=>{
+    if(d==='all'||d===k){ if(!map.hasLayer(dayLayers[k])) dayLayers[k].addTo(map);}
+    else map.removeLayer(dayLayers[k]);
+  });
+  // cards
+  document.querySelectorAll('.day').forEach(sec=>{
+    sec.style.display = (d==='all'||sec.dataset.d===d)?'block':'none';
+  });
+  // fit
+  let pts=[[HOTEL.lat,HOTEL.lng]];
+  DAYS.filter(x=>d==='all'||String(x.d)===d).forEach(x=>x.stops.forEach(s=>pts.push([s.lat,s.lng])));
+  map.fitBounds(pts,{padding:[40,40]});
+});
+map.fitBounds([[HOTEL.lat,HOTEL.lng],...DAYS.flatMap(x=>x.stops.map(s=>[s.lat,s.lng]))],{padding:[40,40]});
+</script>
